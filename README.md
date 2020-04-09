@@ -23,4 +23,20 @@ plt.show()
 ```
 ![payrange seaborn](figures/payrange_sns.png)
 
-Documentation [here](Documentation.md)
+
+# Setup
+Installation:
+1. Clone this repo: `https://github.com/michaelsilverstein/Loans.git`
+2. Install:
+    ```bash
+    cd Loans
+    pip install ./
+    ```
+**Documentation [here](Documentation.md)**
+
+# Contributing
+Contributions are most helpful by adding unit tests to the [test](test/) directory
+
+Unit tests can be run with:
+
+    python -m unittest
