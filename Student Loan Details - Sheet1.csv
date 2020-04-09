@@ -1,0 +1,10 @@
+Loan ,Status,Balance,Interest Rate,Rate,Fed/Priv,Weights
+DIRECT UNSUB STAFFORD LOAN,Grace,"$14,086.00",6.60%,Fixed,Fed,929.68
+DIRECT UNSUB STAFFORD LOAN,Grace,"$7,707.00",6.60%,Fixed,Fed,508.66
+DIRECT SUB STAFFORD LOAN,Forbearance,"$4,932.43",4.66%,Fixed,Fed,229.85
+DIRECT SUB STAFFORD LOAN,Forbearance,"$4,936.63",4.66%,Fixed,Fed,230.05
+DIRECT SUB STAFFORD LOAN,Forbearance,"$4,109.47",4.66%,Fixed,Fed,191.50
+DIRECT UNSUB STAFFORD LOAN,Forbearance,"$1,995.12",4.23%,Fixed,Fed,84.39
+PERKINS,--,"$2,000.00",5.00%,Fixed,Priv,100.00
+PARENT PLUS,--,"$10,363.00",6.41%,Fixed,Priv,664.27
+TOTAL,,"$50,129.65",,,5.86%,Weighted avg
