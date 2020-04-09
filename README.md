@@ -35,7 +35,7 @@ Installation:
 **Documentation [here](Documentation.md)**
 
 # Contributing
-Contributions are most helpful by adding unit tests to the [test](test/) directory
+Contributions are most helpful by adding unit tests to the [test](test/) directory.
 
 Unit tests can be run with:
 
