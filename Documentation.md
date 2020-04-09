@@ -1,8 +1,8 @@
 # Documentation
 
 Classes
-1. [Loan](#Loan)
-2. [Payrange](#Payrange)
+1. [Loan](#Loan): Object for a single loan
+2. [Payrange](#Payrange): Analyze how the total payment towards a loan changes with varying recurring payment amounts
 
 # Loan
 
