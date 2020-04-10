@@ -28,7 +28,7 @@ payment = 200
 
 # Create `loan` object
 loan = Loan(principal, rate, payment, n, t)
-loan
+print(loan)
 ```
     Original principal: $10,000.00
     Current balance: $10,000.00

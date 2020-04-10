@@ -14,6 +14,28 @@ def compint(P, r, n, t) -> float:
     A = P * np.power(1 + r / n, n * t)
     return A
 
+def single_payment(payment, P, r, n=365, t=1/12):
+    """
+    Make a single payment on a loan after accruing interest for the provided pay period
+    :param payment: Payment amount per period
+    :param P: principal
+    :param r: interest rate
+    :param n: number of times interest compounds in period
+    :param t: payment frequency
+    :return: (new principal, amount paid)
+    """
+    # Calculate new principal at end of period
+    P = compint(P, r, n, t)
+    ## Subtract payment
+    # Pay payment amount until principal is zero
+    if P - payment > 0:
+        curr_pay = payment
+    # Otherwise, pay remaining
+    else:
+        curr_pay = P
+    P -= curr_pay
+    return P, curr_pay
+
 def pay_loan(payment, P, r, n=365, t=1/12, stop=1e6) -> tuple:
     """
     Pay a compound interest loan to extinction
@@ -32,16 +54,7 @@ def pay_loan(payment, P, r, n=365, t=1/12, stop=1e6) -> tuple:
     balances = []
     payments = []
     while P > 0:
-        # Calculate new principal at end of period
-        P = compint(P, r, n, t)
-        ## Subtract payment
-        # Pay payment amount until principal is zero
-        if P - payment > 0:
-            curr_pay = payment
-        # Otherwise, pay remaining
-        else:
-            curr_pay = P
-        P -= curr_pay
+        P, curr_pay = single_payment(payment, P, r, n, t)
         assert P <= stop, f'Payments of {money_amount(payment)} have led the balance to reach stopping criteria of' \
                           f'{money_amount(stop)}.'
         balances.append(P)
