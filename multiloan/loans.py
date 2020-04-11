@@ -162,7 +162,7 @@ class MultiLoan:
                 load_kwargs = {}
             self.load_kwargs = load_kwargs
             # Make loan objects
-            Loans = self.load_file()
+            Loans = self._load_file()
         else:
             for loan in Loans:
                 if not isinstance(loan, Loan):
@@ -172,14 +172,13 @@ class MultiLoan:
         self.Loans = Loans
         self.payment = payment
         self.n_loans = len(Loans)
-        loan_df = self.get_loan_table()
-        self.loan_df = loan_df
         self.reset()
 
-        # Order loans by rate
-        self._rate_order = loan_df.sort_values('rate', ascending=False).index
+        # Order loans by rate from highest to lowest
+        rates = [loan.rate for loan in Loans]
+        self._rate_order = np.argsort(rates)[::-1]
 
-    def load_file(self):
+    def _load_file(self):
         """Load loan data from pd.read_csv() readable file"""
         # Load file
         loan_data = pd.read_csv(self.filepath, **self.load_kwargs)
@@ -193,16 +192,12 @@ class MultiLoan:
         loans = [Loan(p, r, pay) for p, r, pay in zip(principals, rates, payments)]
         return loans
 
-    def get_loan_table(self):
-        """Create a table with principals, rate, and minimum for each loan"""
-        data = [dict(zip(['principal', 'rate', 'payment'],
-                         [loan.principal, loan.rate, loan.payment])) for loan in self.Loans]
-        table = pd.DataFrame(data)
-        return table
-
-    def pay_one(self):
-        """Apply a single payment period to all loans"""
-        curr_payments = {i: 0 for i in self.loan_df.index}
+    def pay_one(self, amount=None):
+        """
+        Apply a single payment period to all loans using Multiloan.payment as default amount
+        amount: provide a recurring payment amount to override default
+        """
+        curr_payments = {i: 0 for i in range(len(self.Loans))}
 
         # First gather cost of a single payment
         for i, loan in enumerate(self.Loans):
@@ -213,7 +208,13 @@ class MultiLoan:
 
         # Balance after paying off minimum payments
         curr_min_payments = sum(curr_payments.values())
-        curr_remaining = self.payment - curr_min_payments
+
+        # Now apply remainder of recurring amount
+        if amount:
+            recur_amount = amount
+        else:
+            recur_amount = self.payment
+        curr_remaining = recur_amount - curr_min_payments
         assert curr_remaining >= 0, f'Multiloan payment ({money_amount(self.payment)}) must exceed the sum of recurring payments for each Loan ({money_amount(curr_min_payments)})'
 
         # With remaining amount, now contribute to each loan in order of rate
@@ -237,10 +238,13 @@ class MultiLoan:
         curr_balance = sum([loan.balance for loan in self.Loans])
         self.balances.append(curr_balance)
 
-    def pay_remaining(self):
-        """Pay off the remaining balance to all loans"""
+    def pay_remaining(self, amount=None):
+        """
+        Pay off the remaining balance to all loans using Multiloan.payment as default recurring payment amount
+        amount: provide a recurring payment amount to override default
+        """
         while self.balance > 0:
-            self.pay_one()
+            self.pay_one(amount)
 
 
     def reset(self):
@@ -248,7 +252,7 @@ class MultiLoan:
         Reset payment loan payment history
         """
         self.payments = [0]
-        self.principal = self.loan_df.principal.sum()
+        self.principal = sum([loan.principal for loan in self.Loans])
         self.balances = [self.principal]
 
     @property
