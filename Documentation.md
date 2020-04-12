@@ -1,8 +1,14 @@
 # Documentation
 
-Classes
+[Classes](#Classes)
 1. [Loan](#Loan): Object for a single loan
 2. [Payrange](#Payrange): Analyze how the total payment towards a loan changes with varying recurring payment amounts
+
+[How it works](#How-it-works)
+1. [Compounding interest](#Compounding-interest)
+2. [Multiple loan payments](#Multiple-loan-payments)
+
+# Classes
 
 # Loan
 
@@ -148,3 +154,13 @@ plt.show()
 
 ## Notes
 - If an amount in your `payrange` surprasses the stopping criteria then that payment amount will be skipped
+
+# How it works
+
+This project was inspired by http://unbury.us/ which is a great tool for visualizing the cost of multiple loans over their lifespan for a single recurring payment. This analysis left me interested in thinking "how does my total cost of this recurring payment compare to if I paid more or less per month"?  
+
+# Compounding interest
+
+Each 
+
+# Multiple loan payments

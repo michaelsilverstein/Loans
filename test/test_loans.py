@@ -3,6 +3,7 @@
 from unittest import TestCase
 from multiloan.loans import Loan, MultiLoan
 
+
 class TestLoan(TestCase):
     def setUp(self):
         self.principal = 1e4
@@ -39,9 +40,19 @@ class TestLoan(TestCase):
         # Get balance after first payment after paying off entirely
         loan.reset()
         loan.pay_remaining()
-        all_pay_balance = loan.balances[1]
+        all_pay_balance = loan._balances[1]
 
         self.assertEqual(one_pay_balance, all_pay_balance)
+
+    def test_all_positive(self):
+        """Test that all payments and balances are positive"""
+        loan = self.loan
+
+        loan.pay_remaining()
+
+        self.assertTrue(list(loan.balances > 0))
+
+        self.assertTrue(list(loan.payments > 0))
 
 class TestMultiloan(TestCase):
     def setUp(self):
@@ -53,7 +64,7 @@ class TestMultiloan(TestCase):
         loans = [Loan(p, r, pay) for p, r, pay in zip(principals, rates, payments)]
 
         # Create a multiloan
-        ml = MultiLoan(loans, 500)
+        ml = MultiLoan(loans, 100000)
 
         self.prinicipals = principals
         self.loans = loans
@@ -80,6 +91,7 @@ class TestMultiloan(TestCase):
             MultiLoan()
 
         self.assertEqual(str(error.exception), 'One, and only one, of `Loans` or `filepath` can be provided.')
+
     def test_fail_bad_loan_list(self):
         """If a list of loans provided, all must be Loan object"""
         bad_list = self.loans + ['test']
@@ -88,3 +100,40 @@ class TestMultiloan(TestCase):
             MultiLoan(bad_list)
 
         self.assertEqual(str(error.exception), '`Loans` must be a list of `Loan` objects')
+
+    def test_fail_amount(self):
+        """Fail a payment that is too small"""
+        with self.assertRaises(AssertionError) as error:
+            self.multiloan.pay_remaining(500)
+
+        self.assertEqual(str(error.exception), 'Multiloan payment ($500.00) must exceed the sum of recurring '
+                                               'payments for each Loan ($900.00)')
+
+    def test_loan_history_equals_multi(self):
+        """Sum of payments and balances of each loan should equal that of mulitloan"""
+
+        # Pay off whole loan
+        ml = self.multiloan
+        ml.pay_remaining()
+
+        # Check balances
+        loan_balances_sum = list(ml.loan_balances.sum(0))
+        ml_balances = ml._balances
+
+        self.assertEqual(loan_balances_sum, ml_balances)
+
+        # Check payments
+        loan_payments_sum = list(ml.loan_payments.sum(0))
+        ml_payments = ml._payments
+
+        self.assertEqual(loan_payments_sum, ml_payments)
+
+    def test_all_positive(self):
+        """Test that all payments and balances are positive"""
+        ml = self.multiloan
+
+        ml.pay_remaining()
+
+        self.assertTrue(list(ml.balances > 0))
+
+        self.assertTrue(list(ml.payments > 0))

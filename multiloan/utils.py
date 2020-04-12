@@ -14,6 +14,13 @@ def compint(P, r, n, t) -> float:
     A = P * np.power(1 + r / n, n * t)
     return A
 
+def payment_amount(balance, payment):
+    """
+    The amount of a payment given a balance is which ever is less
+    """
+    curr_payment = min(balance, payment)
+    return curr_payment
+
 def single_payment(payment, P, r, n=365, t=1/12):
     """
     Make a single payment on a loan after accruing interest for the provided pay period
@@ -28,12 +35,12 @@ def single_payment(payment, P, r, n=365, t=1/12):
     P = compint(P, r, n, t)
     ## Subtract payment
     # Pay payment amount until principal is zero
-    if P - payment > 0:
-        curr_pay = payment
-    # Otherwise, pay remaining
-    else:
-        curr_pay = P
+    curr_pay = payment_amount(P, payment)
     P -= curr_pay
+
+    # Round
+    curr_pay = round(curr_pay, 2)
+    P = round(P, 2)
     return P, curr_pay
 
 def pay_loan(payment, P, r, n=365, t=1/12, stop=1e6) -> tuple:

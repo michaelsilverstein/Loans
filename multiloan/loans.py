@@ -1,6 +1,6 @@
 """Define loan classes"""
 
-from multiloan.utils import pay_loan, money_amount, compint, single_payment
+from multiloan.utils import pay_loan, money_amount, single_payment, payment_amount
 from warnings import warn
 import pandas as pd
 import numpy as np
@@ -18,7 +18,7 @@ class Loan:
     rate: Interest rate for payment period
     payment: Payment per period
     n: Number of times interest compounds in pay period
-    t: Payment frequency within rate compounding period
+    t: Payment period within rate compounding period
     stop: Stop criteria to avoid infinite calculation (default 1 million)
 
     Example: Annual interest rate of .05, compounding daily, paying monthly
@@ -57,20 +57,28 @@ class Loan:
         """
         Reset payment loan payment history
         """
-        self.payments = [0]
-        self.balances = [self.principal]
+        self._payments = [0]
+        self._balances = [self.principal]
 
     @property
     def balance(self):
-        return self.balances[-1]
+        return self._balances[-1]
 
     @property
     def totalpay(self):
-        return sum(self.payments)
+        return sum(self._payments)
 
     @property
     def n_payments(self):
-        return len(self.payments) - 1
+        return len(self._payments) - 1
+
+    @property
+    def payments(self):
+        return np.array(self._payments)
+
+    @property
+    def balances(self):
+        return np.array(self._balances)
 
 
     def pay_remaining(self, amount=None):
@@ -81,8 +89,8 @@ class Loan:
         if not amount:
             amount = self.payment
         balances, payments = pay_loan(amount, self.balance, self.rate, self.n, self.t, self.stop)
-        self.balances += balances
-        self.payments += payments
+        self._balances += balances
+        self._payments += payments
 
     def pay_one(self, amount=None):
         """
@@ -95,8 +103,8 @@ class Loan:
         new_amount, curr_pay = single_payment(amount, self.balance, self.rate, self.n, self.t)
 
         # Save
-        self.payments.append(curr_pay)
-        self.balances.append(new_amount)
+        self._payments.append(curr_pay)
+        self._balances.append(new_amount)
 
     def __repr__(self):
         rep = f'Loan(original={money_amount(self.principal)}, balance={money_amount(self.balance)})'
@@ -203,7 +211,7 @@ class MultiLoan:
         for i, loan in enumerate(self.Loans):
             # Do a single payment to get payment amount
             # If balance is less than payment, balance will be returned
-            _, min_pay = single_payment(loan.payment, loan.balance, loan.rate, loan.n, loan.t)
+            min_pay = payment_amount(loan.payment, loan.balance)
             curr_payments[i] += min_pay
 
         # Balance after paying off minimum payments
@@ -215,16 +223,21 @@ class MultiLoan:
         else:
             recur_amount = self.payment
         curr_remaining = recur_amount - curr_min_payments
-        assert curr_remaining >= 0, f'Multiloan payment ({money_amount(self.payment)}) must exceed the sum of recurring payments for each Loan ({money_amount(curr_min_payments)})'
+        assert curr_remaining >= 0, f'Multiloan payment ({money_amount(recur_amount)}) must exceed the sum of recurring payments for each Loan ({money_amount(curr_min_payments)})'
 
         # With remaining amount, now contribute to each loan in order of rate
         for idx in self._rate_order:
-            loan = self.Loans[idx]
-            _, remain_pay = single_payment(curr_remaining, loan.balance, loan.rate, loan.n, loan.t)
-            # Add to this loan's payment
-            curr_payments[idx] += remain_pay
-            # Recalculate curr_remaining
-            curr_remaining -= remain_pay
+            if curr_remaining > 0:
+                loan = self.Loans[idx]
+                # Recalculate the single payment with the current remaining for each loan + what has already been paid
+                curr_min = curr_payments[idx]
+                _, residual_payment = single_payment(curr_remaining + curr_min, loan.balance, loan.rate, loan.n, loan.t)
+                # Update loan payment
+                curr_payments[idx] = residual_payment
+                # Recalculate curr_remaining
+                curr_remaining -= (residual_payment - curr_min)
+            else:
+                break
 
         # Now make loan contributions
         for idx, payment in curr_payments.items():
@@ -234,9 +247,9 @@ class MultiLoan:
 
         # Now update data
         curr_total_payment = sum(curr_payments.values())
-        self.payments.append(curr_total_payment)
+        self._payments.append(curr_total_payment)
         curr_balance = sum([loan.balance for loan in self.Loans])
-        self.balances.append(curr_balance)
+        self._balances.append(curr_balance)
 
     def pay_remaining(self, amount=None):
         """
@@ -251,31 +264,40 @@ class MultiLoan:
         """
         Reset payment loan payment history
         """
-        self.payments = [0]
+        self._payments = [0]
         self.principal = sum([loan.principal for loan in self.Loans])
-        self.balances = [self.principal]
+        self._balances = [self.principal]
 
     @property
     def balance(self):
-        return self.balances[-1]
+        return self._balances[-1]
 
     @property
     def totalpay(self):
-        return sum(self.payments)
+        return sum(self._payments)
 
     @property
     def n_payments(self):
-        return len(self.payments) - 1
+        return len(self._payments) - 1
 
     @property
     def loan_balances(self):
         """Get list of balances after each payment for each loan"""
-        return [loan.balances for loan in self.Loans]
+        return np.array([loan._balances for loan in self.Loans])
 
     @property
     def loan_payments(self):
         """Get list of payments for each loan"""
-        return [loan.payments for loan in self.Loans]
+        return np.array([loan._payments for loan in self.Loans])
+
+    @property
+    def payments(self):
+        return np.array(self._payments)
+
+    @property
+    def balances(self):
+        return np.array(self._balances)
+
     def __repr__(self):
         rep = f'Multiloan(loans={self.n_loans}, original={money_amount(self.principal)}, ' \
               f'balance={money_amount(self.balance)})'
