@@ -5,6 +5,7 @@ from warnings import warn
 import pandas as pd
 import numpy as np
 from typing import List
+import re
 
 
 class Loan:
@@ -39,6 +40,7 @@ class Loan:
     balances: A list of balances after accruing interest and applying payments for each pay period
     totalpay: The total amount paid on this loan (ie. sum(payments))
     n_payments: The number of payments on this loan (ie. len(payments) - 1, to account for initial empty payment)
+    df: A pandas DataFrame of payments and balances
     """
 
     def __init__(self, principal: float, rate: float, payment: float = 0, n: int = 365, t: float = 1 / 12, stop=1e6):
@@ -79,6 +81,12 @@ class Loan:
     @property
     def balances(self):
         return np.array(self._balances)
+
+    @property
+    def df(self):
+        """DataFrame of payment history"""
+        data = [{'amount': p, 'balance': b, 'payment': i} for p, b, i in zip(self._payments, self._balances, range(self.n_payments))]
+        return pd.DataFrame(data)
 
 
     def pay_remaining(self, amount=None):
@@ -136,6 +144,8 @@ class MultiLoan:
     payment: Payment to contribute to all loans per pay period
     filepath: Path to CSV file containing the principal, rate, and payment for each loan, one loan per line.
         By default, it is assumed that the column names are 'principal', 'rate', and 'payment' respectively.
+        All string characters (ex. '$', ',') will be removed from values
+        *Rates must be provided as DECIMALS, not percents (ex. 5% must be provided as .05)
     {principal, rate, payment}_col: Name of column in file at `filepath` indicating each loan feature
     load_kwargs: A dict of keyword arguments to pass to `pd.read_csv()`, which is used to read in `filepath`
 
@@ -153,6 +163,8 @@ class MultiLoan:
     n_payments: The number of payments on this loan (ie. len(payments) - 1, to account for initial empty payment)
     loan_{balances, payments}: A nested list of dimensions [loans X n_payments] containing that loan's {balance,
         payment} history
+    df: A pandas DataFrame of the payment and balance history for each loan, including the "total" payments and
+    balances. Each row represents one payment from one loan.
     """
 
     def __init__(self, Loans: List[Loan]=None, payment: float = 0, filepath: str=None, principal_col: str='principal',
@@ -190,6 +202,11 @@ class MultiLoan:
         """Load loan data from pd.read_csv() readable file"""
         # Load file
         loan_data = pd.read_csv(self.filepath, **self.load_kwargs)
+
+        # Convert all to floats by removing strings
+        columns = [self.principal_col, self.rate_col, self.payment_col]
+
+        loan_data = loan_data[columns].astype(str).applymap(lambda x: ''.join(re.findall('\d|/.', x))).astype(float)
 
         # Extract data
         principals = loan_data[self.principal_col]
@@ -297,6 +314,24 @@ class MultiLoan:
     @property
     def balances(self):
         return np.array(self._balances)
+
+    @property
+    def df(self):
+        """DataFrame of payment history for each loan including 'total'"""
+        # Get data for each loan
+        data = [{'loan': 'loan_%s' % i, 'amount': p, 'balance': b, 'payment': n}
+                for i, loan in enumerate(self.Loans)
+                for p, b, n in zip(loan._payments, loan._balances, range(self.n_payments))]
+        # Get data for total
+        total_data = [{'loan': 'total', 'amount': p, 'balance': b, 'payment': n} for p, b, n
+                      in zip(self._payments, self._balances, range(self.n_payments))]
+        # Combine into one list
+        data += total_data
+        # DataFrame
+        df = pd.DataFrame(data)
+        return df
+
+
 
     def __repr__(self):
         rep = f'Multiloan(loans={self.n_loans}, original={money_amount(self.principal)}, ' \
