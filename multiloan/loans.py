@@ -4,7 +4,7 @@ from multiloan.utils import pay_loan, money_amount, single_payment, payment_amou
 from warnings import warn
 import pandas as pd
 import numpy as np
-from typing import List
+from typing import List, Union
 import re
 
 
@@ -284,6 +284,8 @@ class MultiLoan:
         self._payments = [0]
         self.principal = sum([loan.principal for loan in self.Loans])
         self._balances = [self.principal]
+        for loan in self.Loans:
+            loan.reset()
 
     @property
     def balance(self):
@@ -373,7 +375,7 @@ class Payrange:
     df: A Pandas DataFrame of the above data
     """
 
-    def __init__(self, loan: Loan, payrange: list):
+    def __init__(self, loan: Union[Loan, MultiLoan], payrange: list):
         # Check Loan input
         if not any(isinstance(loan, t) for t in [Loan, MultiLoan]):
             raise TypeError('"loan" must either be a `Loan` or `MulitLoan` object')
