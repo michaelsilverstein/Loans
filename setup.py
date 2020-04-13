@@ -9,7 +9,7 @@ setup(
     packages=['multiloan'],
     install_requires=dependencies,
     url='',
-    license='',
+    license='MIT',
     author='michaelsilverstein',
     author_email='michael.silverstein4@gmail.com',
     description='Tools for managing loan payments'
