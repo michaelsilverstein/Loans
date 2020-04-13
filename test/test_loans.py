@@ -92,6 +92,18 @@ class TestMultiloan(TestCase):
 
         self.assertEqual(str(error.exception), 'One, and only one, of `Loans` or `filepath` can be provided.')
 
+    def test_load_file(self):
+        """Test that loading a file produces same results as using multiple loans"""
+        self.multiloan.pay_remaining()
+        balances_manual = self.multiloan._balances
+
+        new_ml = MultiLoan(filepath='test_loan_table.csv', payment=100000)
+        new_ml.pay_remaining()
+
+        balances_file = new_ml._balances
+
+        self.assertEqual(balances_manual, balances_file)
+
     def test_fail_bad_loan_list(self):
         """If a list of loans provided, all must be Loan object"""
         bad_list = self.loans + ['test']

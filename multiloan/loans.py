@@ -5,7 +5,6 @@ from warnings import warn
 import pandas as pd
 import numpy as np
 from typing import List, Union
-import re
 
 
 class Loan:
@@ -144,7 +143,7 @@ class MultiLoan:
     payment: Payment to contribute to all loans per pay period
     filepath: Path to CSV file containing the principal, rate, and payment for each loan, one loan per line.
         By default, it is assumed that the column names are 'principal', 'rate', and 'payment' respectively.
-        All string characters (ex. '$', ',') will be removed from values
+        *Make sure there are NO STRING CHARACTERS in this file (ex. no '$' or ',')
         *Rates must be provided as DECIMALS, not percents (ex. 5% must be provided as .05)
     {principal, rate, payment}_col: Name of column in file at `filepath` indicating each loan feature
     load_kwargs: A dict of keyword arguments to pass to `pd.read_csv()`, which is used to read in `filepath`
@@ -202,11 +201,11 @@ class MultiLoan:
         """Load loan data from pd.read_csv() readable file"""
         # Load file
         loan_data = pd.read_csv(self.filepath, **self.load_kwargs)
-
-        # Convert all to floats by removing strings
-        columns = [self.principal_col, self.rate_col, self.payment_col]
-
-        loan_data = loan_data[columns].astype(str).applymap(lambda x: ''.join(re.findall('\d|/.', x))).astype(float)
+        #
+        # # Convert all to floats by removing strings
+        # columns = [self.principal_col, self.rate_col, self.payment_col]
+        #
+        # loan_data = loan_data[columns].astype(str).applymap(lambda x: ''.join(re.findall('\d|/.', x))).astype(float)
 
         # Extract data
         principals = loan_data[self.principal_col]
