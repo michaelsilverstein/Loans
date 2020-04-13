@@ -2,7 +2,7 @@
 
 [Classes](#Classes)
 1. [Loan](#Loan): Object for a single loan
-2. [Multiloan](#Multiloan)
+2. [Multiloan](#Multiloan): Object for handling multiple loans
 3. [Payrange](#Payrange): Analyze how the total payment towards a loan changes with varying recurring payment amounts
 
 [How it works](#How-it-works)
@@ -252,7 +252,7 @@ plt.show()
 ## Compounding interest
 This code assumes that each loan **compounds in interest** with the user-specified frequency of `n` within the compounding period. By default `n=365`, anticipating that `rate` you provide is for a year, hence `n=365` since under these conditions the loan will compound 365 times/year. The formula for compound interest is:
 
-$$P_i=P_{i-1}(1+\frac{r}{n})^{nt}$$
+<img src="https://render.githubusercontent.com/render/math?math=P_i=P_{i-1}(1%2B\frac{r}{n})^{nt}>
 
 For an initial principal $P_i$, interest rate $r$, number of times interest compounds in period $n$, a time elapsed $t$, and the balance following compounding, $P_i$.
 
