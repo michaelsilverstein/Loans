@@ -252,10 +252,9 @@ plt.show()
 ## Compounding interest
 This code assumes that each loan **compounds in interest** with the user-specified frequency of `n` within the compounding period. By default `n=365`, anticipating that `rate` you provide is for a year, hence `n=365` since under these conditions the loan will compound 365 times/year. The formula for compound interest is:
 
-![formula]<img src="https://render.githubusercontent.com/render/math?math=P_i=P_{i-1}(1%2B\frac{r}{n})^{nt}">
-
-For an initial principal $P_i$, interest rate $r$, number of times interest compounds in period $n$, a time elapsed $t$, and the balance following compounding, $P_i$.
-
+<img src="https://render.githubusercontent.com/render/math?math=P_i=P_{i-1}(1%2B\frac{r}{n})^{nt}">
+<br>
+For an initial principal *P_i*, interest rate *r*, number of times interest compounds in period *n*, a time elapsed *t*, and the balance following compounding, *P_i*.
 Therefore, a single loan payment is applied by compounding interest over the user-specified time period, `t` (which is 1/12 by default to indicate monthly payments) and then subtracting the payment amount from the new balance.
 
 ## Multiple loan payments
