@@ -2,7 +2,8 @@
 
 [Classes](#Classes)
 1. [Loan](#Loan): Object for a single loan
-2. [Payrange](#Payrange): Analyze how the total payment towards a loan changes with varying recurring payment amounts
+2. [Multiloan](#Multiloan)
+3. [Payrange](#Payrange): Analyze how the total payment towards a loan changes with varying recurring payment amounts
 
 [How it works](#How-it-works)
 1. [Compounding interest](#Compounding-interest)
@@ -10,9 +11,9 @@
 
 # Classes
 
-# Loan
+## Loan
 
-## Definition
+### Parameters
 The `Loan` class is used for storing data and making calculations for a single loan.
 
 Assumed we have a loan with the following parameters
@@ -21,7 +22,7 @@ Assumed we have a loan with the following parameters
     Annual rate: 5%
     Number of compounding events in compound period: 365 (compounding daily)
     Payment frequency: 1/12 (once a month)
-    Payment amount: $200
+    Reucrring payment amount: $200
 
 We can represent this loan using `multiloan`:
 ```python
@@ -48,7 +49,18 @@ Note that the default values for `n` and `t` are `365` and `1/12`, respectively,
 loan = Loan(principal, rate, payment)
 ```    
 
-## Functions and properties
+In summary:
+
+    Parameters
+    ----------
+    principal: Loan balance
+    rate: Interest rate for payment period
+    payment: Amount of recurring payment
+    n: Number of times interest compounds in pay period
+    t: Payment period within rate compounding period
+    stop: Stop criteria to avoid infinite calculation (default 1 million)
+
+### Functions and properties
 Once a `Loan` object is created, payments can be simulated all at once or one at a time.
 
     Functions
@@ -63,6 +75,7 @@ Once a `Loan` object is created, payments can be simulated all at once or one at
     balances: A list of balances after accruing interest and applying payments for each pay period
     totalpay: The total amount paid on this loan (ie. sum(payments))
     n_payments: The number of payments on this loan (ie. len(payments) - 1, to account for initial empty payment)
+    df: A pandas DataFrame of payments and balances
 
 ```python
 from multiloan.loans import Loan
@@ -98,12 +111,91 @@ for name, value in zip(['Balances', 'Payments', 'Total', '#Payments'], [balances
     Total: 10236.436957841315
     #Payments: 11
     
+This data can also be viewed in a DataFrame with one row per payment using: `loan.df`
+
+
 If you want to reset the payment history on a loan, you can use `loan.reset()`. Additionally, you can make single payments with `loan.pay_one()`
 
-## Notes
+### Notes
 - If you're loan balance reached $1,000,000, you will receive an error. This amount can be changed with the `stop` argument or by increasing your `payment`
 
-# Payrange
+## Multiloan
+### Parameters
+The `Mutliloan` class is used for storing data and making calculations towards *multiple* loans. Each loan will likely have a different rate, principal, and minimum payment - while you may choose a different `t` for each loan, it may make results hard to interpret.
+
+    Parameters
+    ----------
+    Loans: an array of Loan objects
+    payment: Payment to contribute to all loans per pay period
+    filepath: Path to CSV file containing the principal, rate, and payment for each loan, one loan per line.
+        By default, it is assumed that the column names are 'principal', 'rate', and 'payment' respectively.
+        *Make sure there are NO STRING CHARACTERS in this file (ex. no '$' or ',')
+        *Rates must be provided as DECIMALS, not percents (ex. 5% must be provided as .05)
+    {principal, rate, payment}_col: Name of column in file at `filepath` indicating each loan feature
+    load_kwargs: A dict of keyword arguments to pass to `pd.read_csv()`, which is used to read in `filepath`
+    
+A multiloan object can be created from either a list of `Loan` objects OR by providing a filepath to a CSV file containing loan data properties like the one [here](data/tutorial_data.csv). If providing a `filepath`, it is most convenient to have your columns named `principal`, `rate`, and `payment` - if this is not the case you can specify the corresponding name of each column by providing it to `{principal, rate, payment}_col`.
+
+For a multiloan, the `payment` is the amount you would like to put towards **all loans** in a given payment period. This amount must exceed the sum of the minimum payments for each loan
+
+```python
+from multiloan.loans import Loan, MultiLoan
+
+# Create some loans
+loans = [Loan(p, r, pay) for p, r, pay in zip([1000, 13000, 900], [.05, .03, .04], [50, 50, 70])]
+# Create a multiloan object from list of loans
+ml1 = MultiLoan(loans, payment=500)
+
+### OR ###
+
+# Create multiloan object from CSV
+ml2 = MultiLoan(filepath='data/tutorial_data.csv', payment=500)
+```
+
+### Functions and properties
+The `Multiloan` class shares all of the functions and properties as the `Loan` class, with the ability to examine the balance over all loans and for each loan independently.
+
+    Functions
+    -------
+    pay_remaining(amount): Pay the remaining balance on loan, using `payment` as default or provide a custom `amount`
+    pay_one(amount): Make a single payment using `payment` as default or provide a custom `amount`
+    reset(): Reset payment history
+
+    Properties
+    ----------
+    payments: A list of payments made on this loan
+    balances: A list of balances after accruing interest and applying payments for each pay period
+    totalpay: The total amount paid on this loan (ie. sum(payments))
+    n_payments: The number of payments on this loan (ie. len(payments) - 1, to account for initial empty payment)
+    loan_{balances, payments}: A nested list of dimensions [loans X n_payments] containing that loan's {balance,
+        payment} history
+    df: A pandas DataFrame of the payment and balance history for each loan, including the "total" payments and
+    balances. Each row represents one payment from one loan.
+
+A list of total payments and balances can be accessed with the `payments` and `balances` properties. Matrices of the dimensions [`number of loans` x `number of payments`] can be accessed with `loan_payments` and `loan_balances`. A longform dataframe of all of this data, per loan and in summed, is available with `df`.
+
+The dataframe can be particularly useful for visualization:
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+from multiloan.loans import MultiLoan
+
+# Create multiloan with $500 monthly payment
+"""Generate data"""
+# Create multiloan with $500 monthly payment
+ml = MultiLoan(filepath='data/tutorial_data.csv', payment=500)
+
+# Pay off all loans
+ml.pay_remaining()
+
+"""Visualize"""
+# Plot the balance for each loan at each payment period
+sns.lineplot('payment', 'balance', 'loan', data=ml.df)
+plt.show()
+```
+![payment_sched](data/figures/payment_schedule.png)
+
+## Payrange
 Payrange allows you to see how varying your routine payments changes the total amount paid for a loan. 
 
 ```python
@@ -132,7 +224,7 @@ print(pay_df.head())
 sns.lineplot('amount', 'total', data=pay_df, marker='o')
 plt.show()
 ```
-![payrange matplotlib](figures/payrange_mpl.png)
+![payrange matplotlib](data/figures/payrange_mpl.png)
 
        amount         total  pct_change  n_payments
     0     100  12971.456824   -0.133494         130
@@ -140,9 +232,9 @@ plt.show()
     2     300  10790.475433   -0.019178          36
     3     400  10583.540737   -0.011280          27
     4     500  10464.161921   -0.007389          21
-![payrange seaborn](figures/payrange_sns.png)
+![payrange seaborn](data/figures/payrange_sns.png)
 
-## Properties
+### Properties
 
     Properties
     ----------
@@ -152,15 +244,19 @@ plt.show()
     pct_change: A list of first difference percent change in `totals`
     df: A Pandas DataFrame of the above data
 
-## Notes
+### Notes
 - If an amount in your `payrange` surprasses the stopping criteria then that payment amount will be skipped
 
 # How it works
 
-This project was inspired by http://unbury.us/ which is a great tool for visualizing the cost of multiple loans over their lifespan for a single recurring payment. This analysis left me interested in thinking "how does my total cost of this recurring payment compare to if I paid more or less per month"?  
+## Compounding interest
+This code assumes that each loan **compounds in interest** with the user-specified frequency of `n` within the compounding period. By default `n=365`, anticipating that `rate` you provide is for a year, hence `n=365` since under these conditions the loan will compound 365 times/year. The formula for compound interest is:
 
-# Compounding interest
+$$P_i=P_{i-1}(1+\frac{r}{n})^{nt}$$
 
-Each 
+For an initial principal $P_i$, interest rate $r$, number of times interest compounds in period $n$, a time elapsed $t$, and the balance following compounding, $P_i$.
 
-# Multiple loan payments
+Therefore, a single loan payment is applied by compounding interest over the user-specified time period, `t` (which is 1/12 by default to indicate monthly payments) and then subtracting the payment amount from the new balance.
+
+## Multiple loan payments
+The "avalanche method" of multiple loan repayment minimizes the total amount spent by paying off the loans in order of interest rate from high to low. You allot a certain amount you wish to apply to all loans with `Multiloan(..., payment=some_amount)` and for each payment period first the minimum payments are made to each loan and then the remainder is contributed to the reamaining loans with the highest interest rate. 

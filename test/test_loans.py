@@ -2,6 +2,7 @@
 
 from unittest import TestCase
 from multiloan.loans import Loan, MultiLoan
+import os
 
 
 class TestLoan(TestCase):
@@ -96,8 +97,8 @@ class TestMultiloan(TestCase):
         """Test that loading a file produces same results as using multiple loans"""
         self.multiloan.pay_remaining()
         balances_manual = self.multiloan._balances
-
-        new_ml = MultiLoan(filepath='test_loan_table.csv', payment=100000)
+        filepath = os.path.join(os.path.dirname(__file__) , 'test_loan_table.csv')
+        new_ml = MultiLoan(filepath=filepath, payment=100000)
         new_ml.pay_remaining()
 
         balances_file = new_ml._balances

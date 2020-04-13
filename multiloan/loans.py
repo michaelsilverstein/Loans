@@ -16,7 +16,7 @@ class Loan:
     ----------
     principal: Loan balance
     rate: Interest rate for payment period
-    payment: Payment per period
+    payment: Amount of recurring payment
     n: Number of times interest compounds in pay period
     t: Payment period within rate compounding period
     stop: Stop criteria to avoid infinite calculation (default 1 million)
@@ -84,7 +84,7 @@ class Loan:
     @property
     def df(self):
         """DataFrame of payment history"""
-        data = [{'amount': p, 'balance': b, 'payment': i} for p, b, i in zip(self._payments, self._balances, range(self.n_payments))]
+        data = [{'amount': p, 'balance': b, 'payment': i} for p, b, i in zip(self._payments, self._balances, range(len(self._payments)))]
         return pd.DataFrame(data)
 
 
@@ -114,7 +114,7 @@ class Loan:
         self._balances.append(new_amount)
 
     def __repr__(self):
-        rep = f'Loan(original={money_amount(self.principal)}, balance={money_amount(self.balance)})'
+        rep = f'Loan(original={money_amount(self.principal)}, balance={money_amount(self.balance)}, rate={self.rate})'
         return rep
 
     def __str__(self):
@@ -122,6 +122,7 @@ class Loan:
 Original principal: {money_amount(self.principal)}
 Current balance: {money_amount(self.balance)}
 Payment amount: {money_amount(self.payment)}
+Rate: {self.rate}
 Total amount paid: {money_amount(self.totalpay)}
 Number of payments: {self.n_payments}"""
         return rep
@@ -322,10 +323,10 @@ class MultiLoan:
         # Get data for each loan
         data = [{'loan': 'loan_%s' % i, 'amount': p, 'balance': b, 'payment': n}
                 for i, loan in enumerate(self.Loans)
-                for p, b, n in zip(loan._payments, loan._balances, range(self.n_payments))]
+                for p, b, n in zip(loan._payments, loan._balances, range(len(loan._payments)))]
         # Get data for total
         total_data = [{'loan': 'total', 'amount': p, 'balance': b, 'payment': n} for p, b, n
-                      in zip(self._payments, self._balances, range(self.n_payments))]
+                      in zip(self._payments, self._balances, range(len(self._payments)))]
         # Combine into one list
         data += total_data
         # DataFrame

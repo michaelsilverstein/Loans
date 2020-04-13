@@ -63,7 +63,7 @@ def pay_loan(payment, P, r, n=365, t=1/12, stop=1e6) -> tuple:
     while P > 0:
         P, curr_pay = single_payment(payment, P, r, n, t)
         assert P <= stop, f'Payments of {money_amount(payment)} have led the balance to reach stopping criteria of' \
-                          f'{money_amount(stop)}.'
+                          f' {money_amount(stop)}.'
         balances.append(P)
         payments.append(curr_pay)
     return balances, payments

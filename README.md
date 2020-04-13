@@ -21,7 +21,7 @@ payrange = Payrange(loan, paylist)
 sns.lineplot('amount', 'total', data=payrange.df, marker='o')
 plt.show()
 ```
-![payrange seaborn](figures/payrange_sns.png)
+![payrange seaborn](data/figures/payrange_sns.png)
 
 
 # Setup
@@ -33,6 +33,9 @@ Installation:
     pip install ./
     ```
 **Documentation [here](Documentation.md)**
+
+# References and other tools
+1. **https://unbury.us**: This is a great online tool that provided a lot of the inspiration for this project. It shows you the payment trajectory of multiple loans for a single monthly payment amount, as you can do with `multiloan`.
 
 # Contributing
 Contributions are most helpful by adding unit tests to the [test](test/) directory
