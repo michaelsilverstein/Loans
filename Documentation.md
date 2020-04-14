@@ -167,8 +167,8 @@ The `Multiloan` class shares all of the functions and properties as the `Loan` c
     balances: A list of balances after accruing interest and applying payments for each pay period
     totalpay: The total amount paid on this loan (ie. sum(payments))
     n_payments: The number of payments on this loan (ie. len(payments) - 1, to account for initial empty payment)
-    loan_{balances, payments}: A nested list of dimensions [loans X n_payments] containing that loan's {balance,
-        payment} history
+    loan_{balances, payments, totals}: A nested list of dimensions [loans X n_payments] containing that loan's {balance,
+        payment, total payment} history
     df: A pandas DataFrame of the payment and balance history for each loan, including the "total" payments and
     balances. Each row represents one payment from one loan.
 
@@ -197,7 +197,13 @@ plt.show()
 
 ## Payrange
 Payrange allows you to see how varying your routine payments changes the total amount paid for a loan. 
+### Parameters
+    Parameters
+    ----------
+    loan: Either a single Loan or a MultiLoan
+    payrange: A list of payment amounts (default = 100 to 1000 by increments of 100)
 
+Here is a single loan example:
 ```python
 from multiloan.loans import Loan, Payrange
 import matplotlib.pyplot as plt
@@ -254,7 +260,7 @@ This code assumes that each loan **compounds in interest** with the user-specifi
 
 <img src="https://render.githubusercontent.com/render/math?math=P_i=P_{i-1}(1%2B\frac{r}{n})^{nt}">
 
-For an initial principal *P_i*, interest rate *r*, number of times interest compounds in period *n*, a time elapsed *t*, and the balance following compounding, *P_i*.
+For an initial principal *P<sub>i-1</sub>*, interest rate *r*, number of times interest compounds in period *n*, a time elapsed *t*, and the balance following compounding, *P<sub>i</sub>*.
 Therefore, a single loan payment is applied by compounding interest over the user-specified time period, `t` (which is 1/12 by default to indicate monthly payments) and then subtracting the payment amount from the new balance.
 
 ## Multiple loan payments

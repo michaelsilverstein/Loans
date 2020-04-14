@@ -1,8 +1,9 @@
 """Test loan classes"""
 
 from unittest import TestCase
-from multiloan.loans import Loan, MultiLoan
+from multiloan.loans import Loan, MultiLoan, Payrange
 import os
+from warnings import simplefilter
 
 
 class TestLoan(TestCase):
@@ -150,3 +151,49 @@ class TestMultiloan(TestCase):
         self.assertTrue(list(ml.balances > 0))
 
         self.assertTrue(list(ml.payments > 0))
+
+    def test_loan_totals(self):
+        """Test that loan totals sum to multiloan total"""
+        ml = self.multiloan
+        ml.pay_remaining()
+
+        self.assertTrue(round(ml.loan_totals.sum(), 2) == ml.totalpay == ml.payments.sum())
+
+class TestPayRange(TestCase):
+    def setUp(self):
+        # Create a multiloan
+        filepath = os.path.join(os.path.dirname(__file__), 'test_loan_table.csv')
+        ml = MultiLoan(filepath=filepath, payment=10000)
+        self.multiloan = ml
+
+        # Create a payrange
+        self.pr_multi = Payrange(ml, range(900, 1200, 50))
+
+    def test_loan_totals_payments(self):
+        """Test that the extracted loan_totals == loan_payments"""
+        pr = self.pr_multi
+
+        loan_totals = pr.loan_totals
+        sum_loan_payments = pr.loan_payments.sum(2)
+
+        for lt, slp in zip(loan_totals, sum_loan_payments):
+            rounded_lt = [round(i, 2) for i in lt]
+            rounded_slp = [round(i, 2) for i in slp]
+            self.assertEqual(rounded_lt, rounded_slp)
+
+    def test_pr_fail(self):
+        """Payrange should fail if none of the amounts are sufficient"""
+        with self.assertRaises(AssertionError) as error:
+            simplefilter('ignore')
+            Payrange(self.multiloan, [100])
+
+        self.assertEqual(str(error.exception), 'No payment amount in the provided payrange is sufficient')
+
+    def test_warning(self):
+        """Test that a warning is raised if too low of payments are provided"""
+
+        with self.assertWarns(UserWarning) as w:
+            Payrange(self.multiloan, [100, 1000])
+
+        self.assertEqual(str(w.warning), 'A payment amount was skipped because it surpassed stop criteria')
+

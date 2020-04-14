@@ -161,10 +161,10 @@ class MultiLoan:
     balances: A list of balances after accruing interest and applying payments for each pay period
     totalpay: The total amount paid on this loan (ie. sum(payments))
     n_payments: The number of payments on this loan (ie. len(payments) - 1, to account for initial empty payment)
-    loan_{balances, payments}: A nested list of dimensions [loans X n_payments] containing that loan's {balance,
-        payment} history
+    loan_{balances, payments, totals}: A nested list of dimensions [loans X n_payments] containing that loan's {balance,
+        payment, total payment} history
     df: A pandas DataFrame of the payment and balance history for each loan, including the "total" payments and
-    balances. Each row represents one payment from one loan.
+    balances (df[df.loan.eq('total')]). Each row represents one payment from one loan.
     """
 
     def __init__(self, Loans: List[Loan]=None, payment: float = 0, filepath: str=None, principal_col: str='principal',
@@ -302,19 +302,41 @@ class MultiLoan:
     @property
     def loan_balances(self):
         """Get list of balances after each payment for each loan"""
-        return np.array([loan._balances for loan in self.Loans])
+        lbs = []
+        n = len(self.balances)
+        for l in self.Loans:
+            lb = l._balances
+            nzeros = n - len(lb)
+            lb += [0] * nzeros
+            lbs.append(lb)
+
+        return np.array(lbs)
 
     @property
     def loan_payments(self):
         """Get list of payments for each loan"""
-        return np.array([loan._payments for loan in self.Loans])
+        lps = []
+        n = len(self.balances)
+        for l in self.Loans:
+            lp = l._payments
+            nzeros = n - len(lp)
+            lp += [0] * nzeros
+            lps.append(lp)
+        return np.array(lps)
+
+    @property
+    def loan_totals(self):
+        """List of totalpayments for each loan"""
+        return np.array([loan.totalpay for loan in self.Loans])
 
     @property
     def payments(self):
+        """A list of Multiloan payments"""
         return np.array(self._payments)
 
     @property
     def balances(self):
+        """A list of multiloan balances"""
         return np.array(self._balances)
 
     @property
@@ -361,7 +383,7 @@ class Payrange:
     Parameters
     ----------
     loan: Either a single Loan or a MultiLoan
-    payrange: A list of payment amounts
+    payrange: A list of payment amounts (default = 100 to 1000 by increments of 100)
 
     Example:
     payrange = [100, 200, 300] will calculate the total cost of a loan at each of these monthly payments
@@ -372,19 +394,28 @@ class Payrange:
     totals: A list of total amount paid at each level of `payrange`
     payments: A list of the number of payments at each level of `payrange`
     pct_change: A list of first difference percent change in `totals`
-    df: A Pandas DataFrame of the above data
+    loan_totals: A matrix of dimensions [number of payranges X number of loans] with the total amount of each loan
+    for each payrange (only if a Mutliloan is provided)
+    loan_payments: A matrix of dimensions [#payranges X #loans X max(# of payments)] (only if a Multiloan is provided)
+    df: A Pandas DataFrame of the above data. Each row contains the data for paying off one loan, with one recurring
+    payment value. If a Multiloan is provided, data for the 'total' will also be included (df[df.loan.eq('total')]).
     """
 
-    def __init__(self, loan: Union[Loan, MultiLoan], payrange: list):
+    def __init__(self, loan: Union[Loan, MultiLoan], payrange: Union[list, range, np.array]=None):
         # Check Loan input
         if not any(isinstance(loan, t) for t in [Loan, MultiLoan]):
             raise TypeError('"loan" must either be a `Loan` or `MulitLoan` object')
 
+        if not payrange:
+            payrange = range(100, 1100, 100)
         self.payrange = payrange
         # Get balances at each payrange level
         amounts = []
         totals = []
         payments = []
+
+        loan_totals = []
+        loan_payments = []
         for amt in payrange:
             # Reset loan
             loan.reset()
@@ -401,17 +432,47 @@ class Payrange:
             totals.append(totalpay)
             payments.append(n_payments)
 
+            # If Multiloan, save loan-level info too
+            if isinstance(loan, MultiLoan):
+                l_totals = loan.loan_totals
+                l_payments = loan.loan_payments
+
+                loan_totals.append(l_totals)
+                loan_payments.append(l_payments)
+
+        # Check that data exists
+        assert len(amounts) > 0, 'No payment amount in the provided payrange is sufficient'
+
         # Calculate percent change in total pays
         pct_changes = np.append(np.diff(totals), 0) / totals
 
+        total_df = pd.DataFrame([[pr, tp, pc, n_p] for pr, tp, pc, n_p in
+                                    zip(amounts, totals, pct_changes, payments)],
+                                   columns=['amount', 'total', 'pct_change', 'n_payments'])
+
         # Save
-        self.amounts = amounts
-        self.totals = totals
-        self.payments = payments
-        self.pct_change = pct_changes
-        self.df = pd.DataFrame([[pr, tp, pc, np] for pr, tp, pc, np in
-                                zip(amounts, totals, pct_changes, payments)],
-                               columns=['amount', 'total', 'pct_change', 'n_payments'])
+        self.amounts = np.array(amounts)
+        self.totals = np.array(totals)
+        self.payments = np.array(payments)
+        self.pct_change = np.array(pct_changes)
+        self.loan_totals = None
+        self.loan_payments = None
+
+        if isinstance(loan, MultiLoan):
+            self.loan_totals = np.array(loan_totals)
+
+            # Save loan payments
+            n = max([lp.shape[1] for lp in loan_payments])
+            lps = []
+            for lp in loan_payments:
+                l = lp.shape[1]
+                n_zeros = n - l
+                lp = np.append(lp, np.zeros((lp.shape[0], n_zeros)), 1)
+                lps.append(lp)
+
+            self._loan_payments = loan_payments
+            self.loan_payments = np.array(lps)
+
 
     def __repr__(self):
         rep = f'Payrange(low={min(self.payrange)}, high={max(self.payrange)})'
