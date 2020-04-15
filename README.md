@@ -1,6 +1,6 @@
 # Multiloan
 
-Quickly analyze the the total cost of paying off one or multiple loans
+Quickly analyze the the total cost of paying off one or multiple (student) loans
 
 
 <p align="center">
