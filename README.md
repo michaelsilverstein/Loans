@@ -24,7 +24,9 @@ You can install this package with `pip`:
 1. **https://unbury.us**: This is a great online tool that provided a lot of the inspiration for this project. It shows you the payment trajectory of multiple loans for a single monthly payment amount, as you can do with `multiloan`.
 
 # Contributing
-Contributions are most helpful by accompanying updates with new unit tests to the [test](test/) directory
+Contributions can be made to the GitHub project here: https://github.com/michaelsilverstein/Loans
+
+Updates should be accompanied by new unit tests to the [test](test/) directory
 
 Unit tests can be run with:
 
