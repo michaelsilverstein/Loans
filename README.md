@@ -4,10 +4,8 @@ Quickly analyze the the total cost of paying off one or multiple loans
 
 
 <p align="center">
-  <img width="445" height="464" src="data/figures/multiloan_home.png"></img>
+  <img width="501" height="522" src="data/figures/multiloan_home.png"></img>
 </p>
-
-
 # Setup
 Installation:
 1. Clone this repo: `https://github.com/michaelsilverstein/Loans.git`
