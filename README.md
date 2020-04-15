@@ -4,7 +4,7 @@ Quickly analyze the the total cost of paying off one or multiple loans
 
 
 <p align="center">
-  <img width="460" height="300" src="data/figures/multiloan_home.png"></img>
+  <img width="445" height="464" src="data/figures/multiloan_home.png"></img>
 </p>
 
 
