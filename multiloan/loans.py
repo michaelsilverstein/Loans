@@ -494,7 +494,7 @@ class Payrange:
 
             # Append total df
             total_df['loan'] = 'total'
-            df = total_df.append(loan_df)
+            df = loan_df.append(total_df)
         else:
             df = total_df
 
