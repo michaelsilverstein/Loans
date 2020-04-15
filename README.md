@@ -12,6 +12,7 @@ Quickly analyze the the total cost of paying off one or multiple loans
 
 # Documentation
 **Documentation:** In detail description of `multiloan` classes available [here](Documentation.md)
+
 **Tutorial**: An interactive tutorial is  [here](tutorial.ipynb)
 
 # Setup
