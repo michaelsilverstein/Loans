@@ -174,12 +174,21 @@ class TestPayRange(TestCase):
         pr = self.pr_multi
 
         loan_totals = pr.loan_totals
-        sum_loan_payments = pr.loan_payments.sum(2)
+        sum_loan_payments = pr.loan_amounts.sum(2)
 
         for lt, slp in zip(loan_totals, sum_loan_payments):
             rounded_lt = [round(i, 2) for i in lt]
             rounded_slp = [round(i, 2) for i in slp]
             self.assertEqual(rounded_lt, rounded_slp)
+
+    def test_totals_loan_totals(self):
+        """Sum of loan totals should equal totals"""
+        pr = self.pr_multi
+
+        totals = [round(i, 2) for i in pr.totals]
+        sum_loan_totals = [round(i, 2) for i in pr.loan_totals.sum(1)]
+
+        self.assertEqual(totals, sum_loan_totals)
 
     def test_pr_fail(self):
         """Payrange should fail if none of the amounts are sufficient"""

@@ -1,5 +1,7 @@
 # Documentation
 
+Check out a notebook tutorial [here](tutorial.ipynb)
+
 [Classes](#Classes)
 1. [Loan](#Loan): Object for a single loan
 2. [Multiloan](#Multiloan): Object for handling multiple loans
@@ -203,55 +205,56 @@ Payrange allows you to see how varying your routine payments changes the total a
     loan: Either a single Loan or a MultiLoan
     payrange: A list of payment amounts (default = 100 to 1000 by increments of 100)
 
-Here is a single loan example:
+Here is an example of how to make a `Payrange` object
 ```python
-from multiloan.loans import Loan, Payrange
-import matplotlib.pyplot as plt
-import seaborn as sns
+from multiloan.loans import MultiLoan, Payrange
 
-principal = 1e4
-rate = .05
-payment = 200
+# Create a multiloan
+ml = MultiLoan(filepath='data/tutorial_data.csv')
 
-# Create loan object
-loan = Loan(principal, rate, payment)
+# Create a payrange with that multiloan to examine the total cost from monthly payments of 100->1000
+r = range(100, 1100, 100)
+pr = Payrange(ml, r)
 
-# Analyze total costs from monthly payments of $100 to $1,000 a month
-paylist = range(100, 1000, 100)
-payrange = Payrange(loan, paylist)
-
-# We can now visualize how the total amount paid changes with monthly payment amounts
-plt.plot(payrange.payments, payrange.totals)
-plt.show()
-
-# Or we can extract a dataframe and plot in seaborn
-pay_df = payrange.df
-print(pay_df.head())
-sns.lineplot('amount', 'total', data=pay_df, marker='o')
-plt.show()
+# Create a Payrange for just a single loan
+## (The data for this loan is also returned in `pr`, this is just to illustrate that you can generate a Payrange
+## with a single loan)
+single_loan = ml.Loans[0]
+pr2 = Payrange(single_loan, r)
 ```
-![payrange matplotlib](data/figures/payrange_mpl.png)
 
-       amount         total  pct_change  n_payments
-    0     100  12971.456824   -0.133494         130
-    1     200  11239.839474   -0.039980          57
-    2     300  10790.475433   -0.019178          36
-    3     400  10583.540737   -0.011280          27
-    4     500  10464.161921   -0.007389          21
-![payrange seaborn](data/figures/payrange_sns.png)
-
+*Note*: Only payment amounts that satisfy the `stop` criteria will be returned when creating a `Payrange`.
 ### Properties
 
     Properties
     ----------
-    amounts: Amount of recurring payments assessed (exluces payment amounts that don't satisfy stop criteria)
+    amounts: List of amount of recurring payments assessed 
+    (Same as 'payrange' excluding payment amounts that don't satisfy stop criteria)
     totals: A list of total amount paid at each level of `payrange`
     payments: A list of the number of payments at each level of `payrange`
     pct_change: A list of first difference percent change in `totals`
-    df: A Pandas DataFrame of the above data
+    loan_totals: A matrix of dimensions [number of payranges X number of loans] with the total amount of each loan
+    for each payrange (only if a Mutliloan is provided)
+    loan_amounts: A matrix of dimensions [#payranges X #loans X max(# of payments)] (only if a Multiloan is provided)
+    df: A Pandas DataFrame of the above data. Each row contains the data for paying off one loan, with one recurring
+    payment value. If a Multiloan is provided, data for the 'total' will also be included (df[df.loan.eq('total')]).
 
-### Notes
-- If an amount in your `payrange` surprasses the stopping criteria then that payment amount will be skipped
+Here is an example of visualizing a `Payrange` from 100 to 1000 by 100 for loans described by [this data](data/tutorial_data.csv). Notice that the payment amounts start at 200 - this is because 100 was insufficient for paying off this loan according to the stopping criteria.
+```python
+from multiloan.loans import MultiLoan, Payrange
+import matplotlib.pyplot as plt
+import seaborn as sns
+# Create multiloan
+ml = MultiLoan(filepath='data/tutorial_data.csv')
+# Create payrange
+pr = Payrange(ml)
+# Visualize payrange using dataframe (pr.df)
+sns.lineplot('amount', 'total', 'loan', data=pr.df, marker='o')
+plt.legend(bbox_to_anchor=(1, 1))
+plt.savefig('data/figures/payrange_sns.png')
+plt.show()
+```
+![payrange seaborn](data/figures/payrange_sns.png)
 
 # How it works
 

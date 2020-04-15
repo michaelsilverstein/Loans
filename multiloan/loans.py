@@ -390,13 +390,14 @@ class Payrange:
 
     Properties
     ----------
-    amounts: Amount of recurring payments assessed (exluces payment amounts that don't satisfy stop criteria)
+    amounts: List of amount of recurring payments assessed
+    (Same as 'payrange' excluding payment amounts that don't satisfy stop criteria)
     totals: A list of total amount paid at each level of `payrange`
     payments: A list of the number of payments at each level of `payrange`
     pct_change: A list of first difference percent change in `totals`
     loan_totals: A matrix of dimensions [number of payranges X number of loans] with the total amount of each loan
     for each payrange (only if a Mutliloan is provided)
-    loan_payments: A matrix of dimensions [#payranges X #loans X max(# of payments)] (only if a Multiloan is provided)
+    loan_amounts: A matrix of dimensions [#payranges X #loans X max(# of payments)] (only if a Multiloan is provided)
     df: A Pandas DataFrame of the above data. Each row contains the data for paying off one loan, with one recurring
     payment value. If a Multiloan is provided, data for the 'total' will also be included (df[df.loan.eq('total')]).
     """
@@ -409,13 +410,14 @@ class Payrange:
         if not payrange:
             payrange = range(100, 1100, 100)
         self.payrange = payrange
+        self.loan = loan
         # Get balances at each payrange level
         amounts = []
         totals = []
         payments = []
 
         loan_totals = []
-        loan_payments = []
+        loan_amounts = []
         for amt in payrange:
             # Reset loan
             loan.reset()
@@ -435,10 +437,10 @@ class Payrange:
             # If Multiloan, save loan-level info too
             if isinstance(loan, MultiLoan):
                 l_totals = loan.loan_totals
-                l_payments = loan.loan_payments
+                l_amounts= loan.loan_payments
 
                 loan_totals.append(l_totals)
-                loan_payments.append(l_payments)
+                loan_amounts.append(l_amounts)
 
         # Check that data exists
         assert len(amounts) > 0, 'No payment amount in the provided payrange is sufficient'
@@ -456,24 +458,51 @@ class Payrange:
         self.payments = np.array(payments)
         self.pct_change = np.array(pct_changes)
         self.loan_totals = None
-        self.loan_payments = None
+        self.loan_amounts = None
 
         if isinstance(loan, MultiLoan):
             self.loan_totals = np.array(loan_totals)
 
             # Save loan payments
-            n = max([lp.shape[1] for lp in loan_payments])
+            n = max([lp.shape[1] for lp in loan_amounts])
             lps = []
-            for lp in loan_payments:
+            for lp in loan_amounts:
                 l = lp.shape[1]
                 n_zeros = n - l
                 lp = np.append(lp, np.zeros((lp.shape[0], n_zeros)), 1)
                 lps.append(lp)
 
-            self._loan_payments = loan_payments
-            self.loan_payments = np.array(lps)
+            self._loan_amounts = loan_amounts
+            self.loan_amounts = np.array(lps)
 
+            # Loan percent change
+            loan_pct_change = np.vstack(
+                (np.diff(self.loan_totals, axis=0), np.zeros((1, self.loan.n_loans)))) / self.loan_totals
+            self.loan_pct_change = loan_pct_change
+
+            # Make loan_df
+            dfs = []
+            for attr, name in zip(['loan_totals', 'loan_pct_change'], ['total', 'pct_change']):
+                d_wide = pd.DataFrame(getattr(self, attr)).rename_axis(columns='loan')
+                d_wide = d_wide.rename(columns={i: 'loan_%s' % i for i in d_wide})
+                d_wide['n_payments'] = self.payments
+                d_wide['amount'] = self.amounts
+                d_wide = d_wide.set_index(['n_payments', 'amount'])
+                d_stack = d_wide.stack().reset_index(name=name).set_index(['amount', 'n_payments', 'loan'])
+                dfs.append(d_stack)
+            loan_df = pd.concat(dfs, 1).reset_index()
+
+            # Append total df
+            total_df['loan'] = 'total'
+            df = total_df.append(loan_df)
+        else:
+            df = total_df
+
+        self.df = df
+
+        # Reset loan
+        loan.reset()
 
     def __repr__(self):
-        rep = f'Payrange(low={min(self.payrange)}, high={max(self.payrange)})'
+        rep = f'Payrange(low={min(self.amounts)}, high={max(self.amounts)})'
         return rep
