@@ -2,27 +2,18 @@
 
 Quickly analyze the the total cost of paying off one or multiple loans
 
-```python
-from multiloan.loans import Loan, Payrange
-import matplotlib.pyplot as plt
-import seaborn as sns
 
-principal = 1e4
-rate = .05
-payment = 200
+<p align="center">
+  <img width="500" height="576" src="data/figures/multiloan_home.png"></img>
+</p>
 
-# Create loan object
-loan = Loan(principal, rate, payment)
 
-# Analyze total costs from monthly payments of $100 to $1,000 a month
-paylist = range(100, 1000, 100)
-payrange = Payrange(loan, paylist)
+`multiloan` allows you to analyze the payment schedule of a single loan, multiple loans, and how the total cost of loans varies with a provided range of recurring payments.
 
-sns.lineplot('amount', 'total', data=payrange.df, marker='o')
-plt.show()
-```
-![payrange seaborn](figures/payrange_sns.png)
+# Documentation
+**Documentation:** In detail description of `multiloan` classes available [here](Documentation.md)
 
+**Tutorial**: An interactive tutorial is  [here](tutorial.ipynb)
 
 # Setup
 Installation:
@@ -32,7 +23,9 @@ Installation:
     cd Loans
     pip install ./
     ```
-**Documentation [here](Documentation.md)**
+
+# References and other tools
+1. **https://unbury.us**: This is a great online tool that provided a lot of the inspiration for this project. It shows you the payment trajectory of multiple loans for a single monthly payment amount, as you can do with `multiloan`.
 
 # Contributing
 Contributions are most helpful by adding unit tests to the [test](test/) directory

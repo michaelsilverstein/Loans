@@ -25,7 +25,7 @@ class TestUtils(TestCase):
 
         # Test break
         expected_message = f'Payments of {money_amount(payment)} have led the balance to reach stopping criteria of' \
-                          f'{money_amount(stop)}.'
+                          f' {money_amount(stop)}.'
 
         with self.assertRaises(AssertionError) as error:
             pay_loan(payment, principal, rate)
